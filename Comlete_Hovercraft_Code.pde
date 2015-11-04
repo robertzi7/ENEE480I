@@ -64,7 +64,15 @@ void loop() {
   {
     //forwards();
     //Center of box: ~~ (x+width/2) +/- 3 of 160
-    //Under: 
+    int blockloc = pixy.blocks[0].x+(pixy.blocks[0].width/2);
+
+    if(blockloc < 157){
+      left();
+    }else if(blockloc > 163){
+      right();
+    }else{
+      forwards();
+    }
     
     // do this (print) every 50 frames because printing every
     // frame would bog down the Arduino
