@@ -62,20 +62,25 @@ void loop() {
   // If there are detect blocks, print them!
   if (blocks)
   {
-    //forwards();
-    //Center of box: ~~ (x+width/2) +/- 3 of 160
-    int blockloc = pixy.blocks[0].x+(pixy.blocks[0].width/2);
-
-    if(blockloc < 157){
+    panError = X_CENTER-pixy.blocks[0].x;
+    tiltError = pixy.blocks[0].y-Y_CENTER;
+    panLoop.update(panError);
+    tiltLoop.update(tiltError);
+    if(panError < -10){
       left();
-    }else if(blockloc > 163){
+    }else if(panError > 10){
       right();
     }else{
       forwards();
     }
+    pixy.setServos(panLoop.m_pos, tiltLoop.m_pos);
+    
+    i++;
     
     // do this (print) every 50 frames because printing every
     // frame would bog down the Arduino
+    if (i%50==0) 
+    {
       sprintf(buf, "Detected %d:\n", blocks);
       Serial.print(buf);
       for (j=0; j<blocks; j++)
@@ -84,6 +89,7 @@ void loop() {
         Serial.print(buf); 
         pixy.blocks[j].print();
       }
+    }
   }else{
     //halt();
   }
