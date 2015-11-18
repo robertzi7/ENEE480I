@@ -28,6 +28,7 @@ Servo rightWheelSpeed;
 int rightWheelA = 7;
 int rightWheelB = 8;
 int IRdetector = A0;
+int first = 1;
 Pixy pixy;
 
 #define X_CENTER        ((PIXY_MAX_X-PIXY_MIN_X)/2)       
@@ -91,54 +92,62 @@ void setup()
   pinMode(IRdetector, INPUT);
   Serial.begin(9600);
   Serial.print("Starting...\n");
-  
+  first = 1;
   pixy.init();
+  pixy.setServos(500, 0);
 }
 
 void loop()
 { 
   static int i = 0;
-  int j;
+  int j = 0;
+  int iter = 0;
   uint16_t blocks;
   char buf[32]; 
   int32_t panError, tiltError;
   
   blocks = pixy.getBlocks();
-  
   if (blocks)
-  { 
-    panError = X_CENTER-pixy.blocks[0].x;
-    tiltError = pixy.blocks[0].y-Y_CENTER;
-    panLoop.update(panError);
-    tiltLoop.update(tiltError);
-    if(panLoop.m_pos < PIXY_RCS_CENTER_POS-10){
-      Serial.print("pingA");
-      left();
-    }else if(panLoop.m_pos > PIXY_RCS_CENTER_POS+10){
-      Serial.print("pingB");
-      right();
+  {
+    if((pixy.blocks[0].width)*(pixy.blocks[0].height) >= 3000){
+      halt();
     }else{
-      Serial.print("pingC");
-      forwards();
+      panError = X_CENTER-pixy.blocks[0].x;
+      tiltError = 0;
+      panLoop.update(panError);
+      tiltLoop.update(tiltError);
+      pixy.setServos(panLoop.m_pos, 0);
+      i = 1;
+      while(i % 50 > 0){
+        if(panLoop.m_pos > PIXY_RCS_CENTER_POS+20){
+          Serial.print("pingA");
+          left();
+        }else if(panLoop.m_pos < PIXY_RCS_CENTER_POS-20){
+          Serial.print("pingB");
+          right();
+        }else{
+          Serial.print("pingC");
+          forwards();
+        }
+        i++;
+      }
     }
-    pixy.setServos(panLoop.m_pos, tiltLoop.m_pos);
-    i++;
-    
-    // do this (print) every 50 frames because printing every
-    // frame would bog down the Arduino
-    //if (i%50==0) 
-    //{
-    //  sprintf(buf, "Detected %d:\n", blocks);
-    //  Serial.print(buf);
-    //  for (j=0; j<blocks; j++)
-    //  {
-    //    sprintf(buf, "  block %d: ", j);
-    //    Serial.print(buf); 
-    //    pixy.blocks[j].print();
-    //  }
-    //}
   }else{
-    halt();
+    if(first == 1){
+      delay(1000);
+      first = 0;
+    }
+    forwards();
+    /*if(j < 1000/iter){
+      forwards();
+    }else{
+      right();
+      delay(1000); //90 degrees
+      halt();
+      iter += 1;
+      j = 0;
+    }
+    j++;*/
   }
 }
 
