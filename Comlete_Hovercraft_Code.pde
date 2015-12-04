@@ -29,6 +29,7 @@ int rightWheelA = 7;
 int rightWheelB = 8;
 int IRdetector = A0;
 int first = 1;
+int start = 1;
 Pixy pixy;
 
 #define X_CENTER        ((PIXY_MAX_X-PIXY_MIN_X)/2)       
@@ -64,7 +65,7 @@ void ServoLoop::update(int32_t error)
   long int vel;
   char buf[32];
   if (m_prevError!=0x80000000)
-  {	
+  {  
     vel = (error*m_pgain + (error - m_prevError)*m_dgain)>>10;
     //sprintf(buf, "%ld\n", vel);
     //Serial.print(buf);
@@ -93,12 +94,14 @@ void setup()
   Serial.begin(9600);
   Serial.print("Starting...\n");
   first = 1;
+  start = 1;
   pixy.init();
-  pixy.setServos(500, 0);
+  pixy.setServos(500, 100);
 }
 
 void loop()
 { 
+  pixy.setServos(panLoop.m_pos, 100);
   static int i = 0;
   int j = 0;
   int iter = 0;
@@ -109,24 +112,26 @@ void loop()
   blocks = pixy.getBlocks();
   if (blocks)
   {
-    if((pixy.blocks[0].width)*(pixy.blocks[0].height) >= 3000){
+    if((pixy.blocks[0].width)*(pixy.blocks[0].height) >= 4000){
+      Serial.print("halt\n");
       halt();
+      delay(5000);
     }else{
       panError = X_CENTER-pixy.blocks[0].x;
       tiltError = 0;
       panLoop.update(panError);
       tiltLoop.update(tiltError);
-      pixy.setServos(panLoop.m_pos, 0);
+      pixy.setServos(panLoop.m_pos, 100);
       i = 1;
-      while(i % 50 > 0){
-        if(panLoop.m_pos > PIXY_RCS_CENTER_POS+20){
-          Serial.print("pingA");
+      while(i % 5 > 0){
+        if(panLoop.m_pos > PIXY_RCS_CENTER_POS+30){
+          Serial.print("left\n");
           left();
-        }else if(panLoop.m_pos < PIXY_RCS_CENTER_POS-20){
-          Serial.print("pingB");
+        }else if(panLoop.m_pos < PIXY_RCS_CENTER_POS-30){
+          Serial.print("right\n");
           right();
         }else{
-          Serial.print("pingC");
+          Serial.print("forward\n");
           forwards();
         }
         i++;
@@ -134,10 +139,25 @@ void loop()
     }
   }else{
     if(first == 1){
-      delay(1000);
       first = 0;
     }
+    Serial.print("Search\n");
     forwards();
+    delay(2000);
+    right();
+    i = 1;
+    j = 1;
+    Serial.print(blocks);
+    while(i < 4000 && j < 2){
+      blocks = pixy.getBlocks();
+      if(blocks == 1){
+        j++;
+      }else{
+        j = 1;
+      }
+      Serial.print(blocks);
+      i++;
+    }
     /*if(j < 1000/iter){
       forwards();
     }else{
@@ -152,8 +172,8 @@ void loop()
 }
 
 void forwards(){
-  leftWheelSpeed.write(100);
-  rightWheelSpeed.write(100);
+  leftWheelSpeed.write(150);
+  rightWheelSpeed.write(150);
   digitalWrite(leftWheelA, HIGH);
   digitalWrite(leftWheelB, LOW);
   digitalWrite(rightWheelA, HIGH);
@@ -161,26 +181,26 @@ void forwards(){
 }
 
 void backwards(){
-  leftWheelSpeed.write(100);
-  rightWheelSpeed.write(100);
+  leftWheelSpeed.write(150);
+  rightWheelSpeed.write(150);
   digitalWrite(leftWheelA, LOW);
   digitalWrite(leftWheelB, HIGH);
   digitalWrite(rightWheelA, LOW);
   digitalWrite(rightWheelB, HIGH);
 }
 
-void left(){
-  leftWheelSpeed.write(100);
-  rightWheelSpeed.write(100);
+void right(){
+  leftWheelSpeed.write(150);
+  rightWheelSpeed.write(150);
   digitalWrite(leftWheelA, LOW);
   digitalWrite(leftWheelB, HIGH);
   digitalWrite(rightWheelA, HIGH);
   digitalWrite(rightWheelB, LOW);
 }
 
-void right(){
-  leftWheelSpeed.write(100);
-  rightWheelSpeed.write(100);
+void left(){
+  leftWheelSpeed.write(150);
+  rightWheelSpeed.write(150);
   digitalWrite(leftWheelA, HIGH);
   digitalWrite(leftWheelB, LOW);
   digitalWrite(rightWheelA, LOW);
