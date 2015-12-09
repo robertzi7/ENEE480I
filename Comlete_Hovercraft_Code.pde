@@ -50,7 +50,7 @@ public:
 
 
 ServoLoop panLoop(300, 500);
-ServoLoop tiltLoop(500, 700);
+ServoLoop tiltLoop(500, 100);
 
 ServoLoop::ServoLoop(int32_t pgain, int32_t dgain)
 {
@@ -78,7 +78,7 @@ void ServoLoop::update(int32_t error)
   m_prevError = error;
 }
 
-
+int setUP = 2;
 
 void setup()
 {
@@ -96,11 +96,18 @@ void setup()
   first = 1;
   start = 1;
   pixy.init();
+  delay(1000);
   pixy.setServos(500, 100);
+  delay(1000);
 }
 
 void loop()
 { 
+  if(setUP > 0){
+      setUP--;
+      setup();
+      first = 2;
+  }
   pixy.setServos(panLoop.m_pos, 100);
   static int i = 0;
   int j = 0;
@@ -110,12 +117,11 @@ void loop()
   int32_t panError, tiltError;
   
   blocks = pixy.getBlocks();
-  if (blocks)
-  {
-    if((pixy.blocks[0].width)*(pixy.blocks[0].height) >= 4000){
-      Serial.print("halt\n");
+  if (blocks) {
+    Serial.println("Found.");
+    if((pixy.blocks[0].width)*(pixy.blocks[0].height) >= 3000){
       halt();
-      delay(5000);
+      delay(10000);
     }else{
       panError = X_CENTER-pixy.blocks[0].x;
       tiltError = 0;
@@ -125,49 +131,39 @@ void loop()
       i = 1;
       while(i % 5 > 0){
         if(panLoop.m_pos > PIXY_RCS_CENTER_POS+30){
-          Serial.print("left\n");
           left();
         }else if(panLoop.m_pos < PIXY_RCS_CENTER_POS-30){
-          Serial.print("right\n");
           right();
         }else{
-          Serial.print("forward\n");
           forwards();
         }
         i++;
       }
     }
   }else{
-    if(first == 1){
-      first = 0;
-    }
-    Serial.print("Search\n");
-    forwards();
-    delay(2000);
-    right();
-    i = 1;
-    j = 1;
-    Serial.print(blocks);
-    while(i < 4000 && j < 2){
+    Serial.println("Search.");
+    i = 0;
+    while(blocks == 0){
+      pixy.setServos(PIXY_RCS_MAX_POS*i/8, 100);
+      delay(2000);
       blocks = pixy.getBlocks();
-      if(blocks == 1){
-        j++;
-      }else{
-        j = 1;
-      }
-      Serial.print(blocks);
       i++;
     }
-    /*if(j < 1000/iter){
+    if(blocks == 0){
       forwards();
-    }else{
+      delay(2000);
       right();
-      delay(1000); //90 degrees
-      halt();
-      iter += 1;
+      i = 0;
       j = 0;
+      while(i < 70000 && j == 0){
+        blocks = pixy.getBlocks();
+        if(blocks > 0){
+          j++;
+        }
+        delay(100);
+        i++;
+      }
     }
-    j++;*/
   }
 }
 
