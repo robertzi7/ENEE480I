@@ -1,4 +1,4 @@
-//
+=//
 // begin license header
 //
 // This file is part of Pixy CMUcam5 or "Pixy" for short
@@ -29,7 +29,6 @@ int rightWheelA = 7;
 int rightWheelB = 8;
 int IRdetector = A0;
 int first = 1;
-int start = 1;
 Pixy pixy;
 
 #define X_CENTER        ((PIXY_MAX_X-PIXY_MIN_X)/2)       
@@ -50,7 +49,7 @@ public:
 
 
 ServoLoop panLoop(300, 500);
-ServoLoop tiltLoop(500, 100);
+ServoLoop tiltLoop(500, 300);
 
 ServoLoop::ServoLoop(int32_t pgain, int32_t dgain)
 {
@@ -78,7 +77,7 @@ void ServoLoop::update(int32_t error)
   m_prevError = error;
 }
 
-int setUP = 2;
+
 
 void setup()
 {
@@ -94,21 +93,13 @@ void setup()
   Serial.begin(9600);
   Serial.print("Starting...\n");
   first = 1;
-  start = 1;
   pixy.init();
-  delay(1000);
-  pixy.setServos(500, 100);
-  delay(1000);
+  pixy.setServos(500, 0);
 }
 
 void loop()
 { 
-  if(setUP > 0){
-      setUP--;
-      setup();
-      first = 2;
-  }
-  pixy.setServos(panLoop.m_pos, 100);
+  pixy.setServos(panLoop.m_pos, 0);
   static int i = 0;
   int j = 0;
   int iter = 0;
@@ -117,9 +108,11 @@ void loop()
   int32_t panError, tiltError;
   
   blocks = pixy.getBlocks();
-  if (blocks) {
-    Serial.println("Found.");
-    if((pixy.blocks[0].width)*(pixy.blocks[0].height) >= 3000){
+  if (blocks)
+  {
+    if((pixy.blocks[0].width)*(pixy.blocks[0].height) >= 5000){
+      delay(500);
+      Serial.println("halt");
       halt();
       delay(10000);
     }else{
@@ -127,49 +120,44 @@ void loop()
       tiltError = 0;
       panLoop.update(panError);
       tiltLoop.update(tiltError);
-      pixy.setServos(panLoop.m_pos, 100);
+      pixy.setServos(panLoop.m_pos, 0);
       i = 1;
       while(i % 5 > 0){
-        if(panLoop.m_pos > PIXY_RCS_CENTER_POS+30){
+        if(panLoop.m_pos > PIXY_RCS_CENTER_POS+20){
+          Serial.println("pingA");
           left();
-        }else if(panLoop.m_pos < PIXY_RCS_CENTER_POS-30){
+        }else if(panLoop.m_pos < PIXY_RCS_CENTER_POS-20){
+          Serial.println("pingB");
           right();
         }else{
+          Serial.println("pingC");
           forwards();
         }
         i++;
       }
     }
   }else{
-    Serial.println("Search.");
-    i = 0;
-    while(blocks == 0){
-      pixy.setServos(PIXY_RCS_MAX_POS*i/8, 100);
-      delay(2000);
-      blocks = pixy.getBlocks();
-      i++;
+    Serial.println("Search");
+    if(first == 1){
+      delay(1000);
+      first = 0;
     }
-    if(blocks == 0){
+    /*if(j < 1000/iter){
       forwards();
-      delay(2000);
+    }else{
       right();
-      i = 0;
+      delay(1000); //90 degrees
+      halt();
+      iter += 1;
       j = 0;
-      while(i < 70000 && j == 0){
-        blocks = pixy.getBlocks();
-        if(blocks > 0){
-          j++;
-        }
-        delay(100);
-        i++;
-      }
     }
+    j++;*/
   }
 }
 
 void forwards(){
-  leftWheelSpeed.write(150);
-  rightWheelSpeed.write(150);
+  leftWheelSpeed.write(100);
+  rightWheelSpeed.write(100);
   digitalWrite(leftWheelA, HIGH);
   digitalWrite(leftWheelB, LOW);
   digitalWrite(rightWheelA, HIGH);
@@ -177,8 +165,8 @@ void forwards(){
 }
 
 void backwards(){
-  leftWheelSpeed.write(150);
-  rightWheelSpeed.write(150);
+  leftWheelSpeed.write(100);
+  rightWheelSpeed.write(100);
   digitalWrite(leftWheelA, LOW);
   digitalWrite(leftWheelB, HIGH);
   digitalWrite(rightWheelA, LOW);
@@ -186,8 +174,8 @@ void backwards(){
 }
 
 void right(){
-  leftWheelSpeed.write(150);
-  rightWheelSpeed.write(150);
+  leftWheelSpeed.write(100);
+  rightWheelSpeed.write(100);
   digitalWrite(leftWheelA, LOW);
   digitalWrite(leftWheelB, HIGH);
   digitalWrite(rightWheelA, HIGH);
@@ -195,8 +183,8 @@ void right(){
 }
 
 void left(){
-  leftWheelSpeed.write(150);
-  rightWheelSpeed.write(150);
+  leftWheelSpeed.write(100);
+  rightWheelSpeed.write(100);
   digitalWrite(leftWheelA, HIGH);
   digitalWrite(leftWheelB, LOW);
   digitalWrite(rightWheelA, LOW);
